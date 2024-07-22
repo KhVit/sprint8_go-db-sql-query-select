@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
+	//_ "modernc.org/sqlite"
 )
 
 type Sale struct {
@@ -15,13 +17,41 @@ type Sale struct {
 // String реализует метод интерфейса fmt.Stringer для Sale, возвращает строковое представление объекта Sale.
 // Теперь, если передать объект Sale в fmt.Println(), то выведется строка, которую вернёт эта функция.
 func (s Sale) String() string {
+
 	return fmt.Sprintf("Product: %d Volume: %d Date:%s", s.Product, s.Volume, s.Date)
 }
 
 func selectSales(client int) ([]Sale, error) {
-	var sales []Sale
 
 	// напишите код здесь
+	db, err := sql.Open("sqlite3", "/Users/yong3rz/go/projects/ya_practicum/M3_SQL_DB/sprint8_go-db-sql-query-select/demo.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var sales []Sale
+
+	rows, err := db.Query("SELECT product, volume, date FROM sales WHERE client = :client_id", sql.Named("client_id", client))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		sale := Sale{}
+
+		err := rows.Scan(&sale.Product, &sale.Volume, &sale.Date)
+		if err != nil {
+			return nil, err
+		}
+
+		sales = append(sales, sale)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return sales, nil
 }
